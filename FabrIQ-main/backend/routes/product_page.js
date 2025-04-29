@@ -2,6 +2,137 @@ const express = require('express');
 const router = express.Router();
 const pool = require('../db');
 
+//Local Database
+// router.get('/', async (req, res) => {
+//   try {
+//     const {
+//       page = 1,
+//       limit = 12,
+//       search = '',
+//       category = '',
+//       minPrice = 0,
+//       maxPrice = 100000,
+//       sort = 'newest'
+//     } = req.query;
+
+//     const offset = (page - 1) * limit;
+
+//     let query = `
+//       SELECT 
+//         p.*, 
+//         sc.category_id AS subcategory_id,
+//         sc.category_name AS subcategory_name,
+//         pc.category_id AS parent_category_id,
+//         pc.category_name AS parent_category_name,
+//         COUNT(*) OVER() AS total_count
+//       FROM products p
+//       LEFT JOIN categories sc ON p.category_id = sc.category_id
+//       LEFT JOIN categories pc ON sc.parent_category_id = pc.category_id
+//       WHERE p.product_price BETWEEN ? AND ?
+//       AND p.product_visibility != 'not_visible'
+//     `;
+
+//     const queryParams = [minPrice, maxPrice];
+
+//     if (search) {
+//       query += ` AND (p.product_name LIKE ? OR p.product_description LIKE ?)`;
+//       queryParams.push(`%${search}%`, `%${search}%`);
+//     }
+
+//     if (category) {
+//       query += ` AND p.category_id = ?`;
+//       queryParams.push(category);
+//     }
+
+//     switch (sort) {
+//       case 'price-low':
+//         query += ` ORDER BY p.product_price ASC`;
+//         break;
+//       case 'price-high':
+//         query += ` ORDER BY p.product_price DESC`;
+//         break;
+//       case 'newest':
+//         query += ` ORDER BY p.created_at DESC`;
+//         break;
+//       case 'popular':
+//         query += ` ORDER BY p.view_count DESC`;
+//         break;
+//       default:
+//         query += ` ORDER BY p.created_at DESC`;
+//     }
+
+//     query += ` LIMIT ? OFFSET ?`;
+//     queryParams.push(parseInt(limit), parseInt(offset));
+
+//     const conn = await pool.getConnection();
+//     const [products] = await conn.query(query, queryParams);
+
+//     if (products.length === 0) {
+//       conn.release();
+//       return res.json({
+//         products: [],
+//         total: 0,
+//         totalPages: 0
+//       });
+//     }
+
+//     const totalCount = products[0].total_count;
+//     const totalPages = Math.ceil(totalCount / limit);
+
+//     const productIds = products.map((p) => p.product_id);
+
+//     const [images] = await conn.query(
+//       'SELECT product_id, image_url FROM product_images WHERE product_id IN (?)',
+//       [productIds]
+//     );
+
+//     const imagesMap = {};
+//     images.forEach((img) => {
+//       if (!imagesMap[img.product_id]) {
+//         imagesMap[img.product_id] = [];
+//       }
+//       imagesMap[img.product_id].push(img.image_url);
+//     });
+
+//     const finalProducts = products.map((p) => ({
+//       id: p.product_id,
+//       name: p.product_name,
+//       price: p.product_price,
+//       description: p.product_description,
+//       stock: p.product_quantity,
+//       color: p.color,
+//       size: p.size,
+//       urlKey: p.url_key,
+//       created_at: p.created_at,
+//       categoryId: p.category_id,
+
+//       category: {
+//         id: p.parent_category_id || p.subcategory_id || null,
+//         name: p.parent_category_name || p.subcategory_name || null,
+//         subcategories: p.subcategory_id ? [
+//           {
+//             id: p.subcategory_id,
+//             name: p.subcategory_name
+//           }
+//         ] : []
+//       },
+//       images: imagesMap[p.product_id] || [],
+//     }));
+
+//     conn.release();
+
+//     res.json({
+//       products: finalProducts,
+//       total: totalCount,
+//       totalPages: totalPages
+//     });
+//   } catch (error) {
+//     console.error('Error fetching products:', error);
+//     res.status(500).json({ message: 'Server error' });
+//   }
+// });
+
+//Online Database
 router.get('/', async (req, res) => {
   try {
     const {
@@ -16,32 +147,42 @@ router.get('/', async (req, res) => {
 
     const offset = (page - 1) * limit;
 
+    let baseWhere = `WHERE p.product_price BETWEEN ? AND ? AND p.product_visibility != 'not_visible'`;
+    const queryParams = [minPrice, maxPrice];
+    const countParams = [...queryParams];
+
+    if (search) {
+      baseWhere += ` AND (p.product_name LIKE ? OR p.product_description LIKE ?)`;
+      queryParams.push(`%${search}%`, `%${search}%`);
+      countParams.push(`%${search}%`, `%${search}%`);
+    }
+
+    if (category) {
+      baseWhere += ` AND p.category_id = ?`;
+      queryParams.push(category);
+      countParams.push(category);
+    }
+
+    const countQuery = `
+      SELECT COUNT(*) AS total
+      FROM products p
+      LEFT JOIN categories sc ON p.category_id = sc.category_id
+      LEFT JOIN categories pc ON sc.parent_category_id = pc.category_id
+      ${baseWhere}
+    `;
+
     let query = `
       SELECT 
         p.*, 
         sc.category_id AS subcategory_id,
         sc.category_name AS subcategory_name,
         pc.category_id AS parent_category_id,
-        pc.category_name AS parent_category_name,
-        COUNT(*) OVER() AS total_count
+        pc.category_name AS parent_category_name
       FROM products p
       LEFT JOIN categories sc ON p.category_id = sc.category_id
       LEFT JOIN categories pc ON sc.parent_category_id = pc.category_id
-      WHERE p.product_price BETWEEN ? AND ?
-      AND p.product_visibility != 'not_visible'
+      ${baseWhere}
     `;
-
-    const queryParams = [minPrice, maxPrice];
-
-    if (search) {
-      query += ` AND (p.product_name LIKE ? OR p.product_description LIKE ?)`;
-      queryParams.push(`%${search}%`, `%${search}%`);
-    }
-
-    if (category) {
-      query += ` AND p.category_id = ?`;
-      queryParams.push(category);
-    }
 
     switch (sort) {
       case 'price-low':
@@ -50,12 +191,10 @@ router.get('/', async (req, res) => {
       case 'price-high':
         query += ` ORDER BY p.product_price DESC`;
         break;
-      case 'newest':
-        query += ` ORDER BY p.created_at DESC`;
-        break;
       case 'popular':
         query += ` ORDER BY p.view_count DESC`;
         break;
+      case 'newest':
       default:
         query += ` ORDER BY p.created_at DESC`;
     }
@@ -64,32 +203,25 @@ router.get('/', async (req, res) => {
     queryParams.push(parseInt(limit), parseInt(offset));
 
     const conn = await pool.getConnection();
-    const [products] = await conn.query(query, queryParams);
-
-    if (products.length === 0) {
-      conn.release();
-      return res.json({
-        products: [],
-        total: 0,
-        totalPages: 0
-      });
-    }
-
-    const totalCount = products[0].total_count;
+    const [[{ total: totalCount }]] = await conn.query(countQuery, countParams);
     const totalPages = Math.ceil(totalCount / limit);
 
-    const productIds = products.map((p) => p.product_id);
+    const [products] = await conn.query(query, queryParams);
 
+    if (!products.length) {
+      conn.release();
+      return res.json({ products: [], total: 0, totalPages: 0 });
+    }
+
+    const productIds = products.map(p => p.product_id);
     const [images] = await conn.query(
-      'SELECT product_id, image_url FROM product_images WHERE product_id IN (?)',
+      `SELECT product_id, image_url FROM product_images WHERE product_id IN (?)`,
       [productIds]
     );
 
     const imagesMap = {};
     images.forEach((img) => {
-      if (!imagesMap[img.product_id]) {
-        imagesMap[img.product_id] = [];
-      }
+      if (!imagesMap[img.product_id]) imagesMap[img.product_id] = [];
       imagesMap[img.product_id].push(img.image_url);
     });
 
@@ -104,16 +236,12 @@ router.get('/', async (req, res) => {
       urlKey: p.url_key,
       created_at: p.created_at,
       categoryId: p.category_id,
-
       category: {
         id: p.parent_category_id || p.subcategory_id || null,
         name: p.parent_category_name || p.subcategory_name || null,
-        subcategories: p.subcategory_id ? [
-          {
-            id: p.subcategory_id,
-            name: p.subcategory_name
-          }
-        ] : []
+        subcategories: p.subcategory_id
+          ? [{ id: p.subcategory_id, name: p.subcategory_name }]
+          : []
       },
       images: imagesMap[p.product_id] || [],
     }));
@@ -125,6 +253,7 @@ router.get('/', async (req, res) => {
       total: totalCount,
       totalPages: totalPages
     });
+
   } catch (error) {
     console.error('Error fetching products:', error);
     res.status(500).json({ message: 'Server error' });

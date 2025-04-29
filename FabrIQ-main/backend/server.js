@@ -18,6 +18,7 @@ const paymentsRoutes = require("./routes/payments");
 const categoriesRoutes = require('./routes/categories');
 const productPageRoute = require('./routes/product_page');
 const categorieRoutes = require('./routes/categorie');
+const cartRoutes = require('./routes/cart');
 
 const deleteExpiredOtps = require('./utils/otpCleanup');
 const deleteExpiredTokens = require("./utils/deleteExpiredTokens");
@@ -60,6 +61,7 @@ app.use("/api/payments", paymentsRoutes);
 app.use('/api/categories', categoriesRoutes);
 app.use('/api/productPage', productPageRoute);
 app.use('/api/categorie', categorieRoutes);
+app.use('/api/cart', cartRoutes);
 
 cron.schedule('*/5 * * * *', () => {
   deleteExpiredOtps();

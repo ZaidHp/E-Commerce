@@ -25,12 +25,40 @@ import AIProduct from "./business_pages/AIProduct";
 import LandingPage from "./pages/landing";
 import ProductsPage from "./customer_pages/ProductsPage";
 import ProductDescription from './customer_pages/ProductDescription';
+import CartPage from './customer_pages/CartPage';
+import OrderPage from './customer_pages/OrderPage'
 
 import BusinessLayout from "./layouts/BusinessLayout";
 
 import Canvas from './canvas';
 import Home from './pages/Home';
 import Customizer from './pages/Customizer';
+
+const dummyOrder = {
+  shippingInfo: {
+    name: 'Mr. Smith',
+    phone: '89764356',
+    address: 'Sunshine Street st#5, Karachi - Gulshan-e-Iqbal, Sindh',
+  },
+
+  products: [
+    {
+      id: 1,
+      name: 'Best Leather Wallet',
+      price: 479,
+      quantity: 1,
+      img: 'https://images.pexels.com/photos/3053824/pexels-photo-3053824.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1'
+    },
+    {
+      id: 2,
+      name: 'Stylish Belt for Men',
+      price: 299,
+      quantity: 2,
+      img: 'https://images.pexels.com/photos/4066292/pexels-photo-4066292.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1'
+    },
+  ],
+
+};
 
 function App() {
   return (
@@ -47,6 +75,8 @@ function App() {
           <Route path="/" element={<LandingPage />} />
           <Route path="/product" element={<ProductsPage />} />
           <Route path="/product/:urlKey" element={<ProductDescription />} />
+          <Route path="/cart" element={<CartPage />} />
+          <Route path="/order" element={<OrderPage orderData={dummyOrder} />} />
 
           <Route path="/order-AIcustomize-product" element={
             <ProtectedRoute allowedUserType="customer">

@@ -1,8 +1,10 @@
 import React, { useEffect, useState, useRef } from 'react';
 import './ProductDescription.css';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { Carousel } from 'react-responsive-carousel';
 import 'react-responsive-carousel/lib/styles/carousel.min.css';
+import { toast, ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 const HeartIcon = ({ className = "w-5 h-5 inline-block ml-2" }) => (
   <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -10,8 +12,9 @@ const HeartIcon = ({ className = "w-5 h-5 inline-block ml-2" }) => (
   </svg>
 );
 
-function ProductDescription({ onAddToCart, onAddToWishlist, visitStore }) {
+function ProductDescription({ onAddToWishlist, visitStore }) {
   const { urlKey } = useParams();
+  const navigate = useNavigate();
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
   const [selectedSize, setSelectedSize] = useState(null);
@@ -28,7 +31,6 @@ function ProductDescription({ onAddToCart, onAddToWishlist, visitStore }) {
       try {
         const res = await fetch(`http://localhost:8080/api/productPage/${urlKey}`);
         const data = await res.json();
-        console.log(data);
         setProduct(data.product);
         setStoreInfo(data.storeInfo);
         setReviews(data.reviews);
@@ -70,11 +72,57 @@ function ProductDescription({ onAddToCart, onAddToWishlist, visitStore }) {
     }
   };
 
+  const handleAddToCart = async () => {
+    try {
+      const token = localStorage.getItem('access_token');
+      if (!token) {
+        toast.error('Please login to add items to your cart');
+        navigate('/login');
+        return;
+      }
+  
+      if (!selectedSize) {
+        toast.error('Please select a size');
+        return;
+      }
+  
+      const response = await fetch('http://localhost:8080/api/cart/add', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          productId: product.product_id,
+          quantity: currentQuantity,
+          size: selectedSize,
+          colorId: selectedColor
+        })
+      });
+  
+      // First check if the response is OK (status 200-299)
+      if (!response.ok) {
+        // Try to get the error message from response
+        const errorData = await response.text();
+        console.error('Server response:', errorData);
+        throw new Error(errorData || 'Failed to add item to cart');
+      }
+  
+      // If response is OK, parse as JSON
+      const data = await response.json();
+      toast.success('Item added to cart successfully!');
+    } catch (error) {
+      console.error('Error adding to cart:', error);
+      toast.error(error.message || 'Failed to add item to cart');
+    }
+  };
+
   if (loading) return <div className="text-center py-10">Loading...</div>;
   if (!product) return <div className="text-center py-10 text-red-500">Product not found.</div>;
 
   return (
     <div className='min-h-screen flex flex-col product-description'>
+      <ToastContainer position="top-right" autoClose={3000} />
       <div className="container mx-auto p-4 md:p-6 lg:p-8">
         <div className="flex flex-col md:flex-row -mx-4">
           <div className="md:w-1/3 px-4 mb-6 md:mb-0">
@@ -248,11 +296,7 @@ function ProductDescription({ onAddToCart, onAddToWishlist, visitStore }) {
 
             <div className="flex flex-col sm:flex-row space-y-3 sm:space-y-0 sm:space-x-4">
               <button
-                onClick={() => onAddToCart({ 
-                  productId: product.product_id,
-                  quantity: currentQuantity, 
-                  size: selectedSize 
-                })}
+                onClick={handleAddToCart}
                 disabled={!selectedSize}
                 className={`flex-1 bg-black text-white py-3 px-6 rounded-md hover:bg-gray-800 ${!selectedSize ? 'opacity-50 cursor-not-allowed' : ''}`}
               >
