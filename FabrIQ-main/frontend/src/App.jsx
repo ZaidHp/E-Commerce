@@ -5,11 +5,13 @@ import 'react-toastify/dist/ReactToastify.css';
 
 import Signup from "./components/Signup";
 import Login from "./components/Login";
+import AuthPage from "./pages/AuthPage";
 import EmailVerify from "./components/EmailVerify";
 import Main from "./components/Main/";
 import ProtectedRoute from "./components/ProtectedRoute";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
+import GuestRoute from "./components/GuestRoute";
 
 import Dashboard from "./business_pages/Dashboard";
 import NewProduct from "./business_pages/NewProduct";
@@ -27,38 +29,15 @@ import ProductsPage from "./customer_pages/ProductsPage";
 import ProductDescription from './customer_pages/ProductDescription';
 import CartPage from './customer_pages/CartPage';
 import OrderPage from './customer_pages/OrderPage'
+import WishlistPage from "./customer_pages/WishlistPage";
+import BusinessStore from "./customer_pages/BusinessStore";
 
 import BusinessLayout from "./layouts/BusinessLayout";
+import CustomerLayout from "./layouts/CustomerLayout";
 
 import Canvas from './canvas';
 import Home from './pages/Home';
 import Customizer from './pages/Customizer';
-
-const dummyOrder = {
-  shippingInfo: {
-    name: 'Mr. Smith',
-    phone: '89764356',
-    address: 'Sunshine Street st#5, Karachi - Gulshan-e-Iqbal, Sindh',
-  },
-
-  products: [
-    {
-      id: 1,
-      name: 'Best Leather Wallet',
-      price: 479,
-      quantity: 1,
-      img: 'https://images.pexels.com/photos/3053824/pexels-photo-3053824.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1'
-    },
-    {
-      id: 2,
-      name: 'Stylish Belt for Men',
-      price: 299,
-      quantity: 2,
-      img: 'https://images.pexels.com/photos/4066292/pexels-photo-4066292.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1'
-    },
-  ],
-
-};
 
 function App() {
   return (
@@ -73,19 +52,87 @@ function App() {
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/" element={<LandingPage />} />
-          <Route path="/product" element={<ProductsPage />} />
-          <Route path="/product/:urlKey" element={<ProductDescription />} />
-          <Route path="/cart" element={<CartPage />} />
-          <Route path="/order" element={<OrderPage orderData={dummyOrder} />} />
+          <Route 
+            path="/product"
+            element={
+              <CustomerLayout>
+                <ProductsPage />
+              </CustomerLayout>
+          } />
+          <Route 
+            path="/product/category/:category"
+            element={
+              <CustomerLayout>
+                <ProductsPage />
+              </CustomerLayout>
+          } />
+          <Route 
+            path="/product/search"
+            element={
+              <CustomerLayout>
+                <ProductsPage />
+              </CustomerLayout>
+          } />
+          <Route 
+            path="/product/viewProduct/:urlKey"
+            element={
+              <CustomerLayout>
+                <ProductDescription />
+              </CustomerLayout>
+          } />
+          <Route 
+            path="/cart"
+            element={
+              <CustomerLayout>
+                <CartPage />
+              </CustomerLayout>
+          } />
+          <Route 
+            path="/checkout"
+            element={
+              <CustomerLayout>
+                <OrderPage/>
+              </CustomerLayout>
+          } />
+
+          <Route 
+            path="/wishlist"
+            element={
+              <CustomerLayout>
+                <WishlistPage/>
+              </CustomerLayout>
+          } />
+
+          <Route 
+            path="/store/:business_name"
+            element={
+              <CustomerLayout>
+                <BusinessStore/>
+              </CustomerLayout>
+          } />
+
+          <Route 
+            path="/auth"
+            element={
+              <GuestRoute>
+                <CustomerLayout>
+                  <AuthPage/>
+                </CustomerLayout>
+              </GuestRoute>
+          } />
+
+          {/* <Route path="/product/:urlKey" element={<ProductDescription />} /> */}
+          {/* <Route path="/cart" element={<CartPage />} /> */}
+          {/* <Route path="/checkout" element={<OrderPage/>} /> */}
 
           <Route path="/order-AIcustomize-product" element={
-            <ProtectedRoute allowedUserType="customer">
+            <CustomerLayout>
               <main className='app transition-all ease-in'> 
                 <Home />
                 <Canvas /> 
                 <Customizer nextStage="Order Now" />
               </main>
-            </ProtectedRoute>
+            </CustomerLayout>
           } />
 
           <Route path="/create-custom-AIproduct" element={

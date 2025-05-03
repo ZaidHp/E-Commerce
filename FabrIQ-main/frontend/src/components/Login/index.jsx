@@ -30,7 +30,6 @@ const Login = () => {
 			localStorage.setItem("access_token", res.access_token);
 			localStorage.setItem("refresh_token", res.refresh_token);
 
-			localStorage.setItem("user_type", res.user_type);
 			localStorage.setItem("email", res.email);
 			localStorage.setItem("user_id", res.user_id);
 			localStorage.setItem("name", res.name);

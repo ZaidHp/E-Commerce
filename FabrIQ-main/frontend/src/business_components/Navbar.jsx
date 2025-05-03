@@ -11,11 +11,11 @@ const Navbar = () => {
 
 	useEffect(() => {
 		const name = localStorage.getItem("name");
-		const userType = localStorage.getItem("user_type");
+		// const userType = localStorage.getItem("user_type");
 
-		if (userType !== "business") {
-			return;
-		}
+		// if (userType !== "business") {
+		// 	return;
+		// }
 
 		if (name) {
 			setUserInitial(name.charAt(0).toUpperCase());
@@ -25,7 +25,7 @@ const Navbar = () => {
 	const handleLogout = async () => {
 		const success = await logoutUser();
 		if (success) {
-			navigate("/login");
+			navigate("/auth");
 		}
 	};
 
