@@ -3,6 +3,8 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 const pool = require('../db');
+const { S3Client, PutObjectCommand, DeleteObjectCommand } = require('@aws-sdk/client-s3');
+const { v4: uuidv4 } = require('uuid');
 
 const router = express.Router();
 
@@ -21,6 +23,65 @@ const storage = multer.diskStorage({
 
 const upload = multer({ storage });
 
+// // Configure AWS S3 client
+// const s3Client = new S3Client({
+//   region: process.env.AWS_REGION,
+//   credentials: {
+//     accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+//     secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY
+//   }
+// });
+
+// // Configure multer for memory storage (we'll stream directly to S3)
+// const upload = multer({
+//   storage: multer.memoryStorage(),
+//   limits: {
+//     fileSize: 10 * 1024 * 1024 // 10MB limit
+//   }
+// });
+
+// // Helper function to upload file to S3
+// const uploadToS3 = async (file, folder = 'products') => {
+//   const fileExtension = path.extname(file.originalname);
+//   const key = `${folder}/${uuidv4()}${fileExtension}`;
+  
+//   const params = {
+//     Bucket: process.env.AWS_S3_BUCKET_NAME,
+//     Key: key,
+//     Body: file.buffer,
+//     ContentType: file.mimetype,
+//     // ACL: 'public-read'
+//   };
+
+  // await s3Client.send(new PutObjectCommand(params));
+  // return `${process.env.AWS_S3_BUCKET_URL}/${key}`;
+
+//   try {
+//     await s3Client.send(new PutObjectCommand(params));
+//     return `https://${process.env.AWS_S3_BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com/${params.Key}`;
+//   } catch (error) {
+//     console.error('S3 Upload Error:', error);
+//     throw error;
+//   }
+// };
+
+// Helper function to delete file from S3
+// const deleteFromS3 = async (url) => {
+//   const key = url.replace(`${process.env.AWS_S3_BUCKET_URL}/`, '');
+//   const params = {
+//     Bucket: process.env.AWS_S3_BUCKET_NAME,
+//     Key: key
+//   };
+
+//   try {
+//     await s3Client.send(new DeleteObjectCommand(params));
+//     return true;
+//   } catch (error) {
+//     console.error('Error deleting file from S3:', error);
+//     return false;
+//   }
+// };
+
 router.post('/', upload.fields([{ name: "images", maxCount: 10 }]), async (req, res) => {
   const {
     business_id,
@@ -38,6 +99,8 @@ router.post('/', upload.fields([{ name: "images", maxCount: 10 }]), async (req, 
     attributes
   } = req.body;
 
+  console.log(req.body);
+
   const conn = await pool.getConnection();
 
   try {
@@ -45,8 +108,10 @@ router.post('/', upload.fields([{ name: "images", maxCount: 10 }]), async (req, 
 
     const parsedAttributes = JSON.parse(attributes || '[]');
     const product_quantity = parsedAttributes.reduce((total, attr) => {
-      return total + attr.sizes.reduce((sum, size) => sum + (parseInt(size.quantity) || 0, 0));
+      return total + attr.sizes.reduce((sum, size) => sum + (parseInt(size.quantity) || 0), 0);
     }, 0);
+
+    console.log(product_quantity);
 
     const [productResult] = await conn.query(
       `INSERT INTO products (
@@ -104,6 +169,16 @@ router.post('/', upload.fields([{ name: "images", maxCount: 10 }]), async (req, 
         );
       }
     }
+
+    // if (req.files?.images?.length > 0) {
+    //   for (const file of req.files.images) {
+    //     const imageUrl = await uploadToS3(file, 'products');
+    //     await conn.query(
+    //       'INSERT INTO product_images (product_id, image_url) VALUES (?, ?)',
+    //       [product_id, imageUrl]
+    //     );
+    //   }
+    // }
 
     await conn.commit();
     res.status(201).json({ 
@@ -402,9 +477,26 @@ router.put("/:id", upload.array("images"), async (req, res) => {
     }
 
     if (req.files && req.files.length > 0) {
-      const imageInsertValues = req.files.map(file => [id, `/uploads/products/${file.filename}`]);
+      const imageInsertValues = req.files.map(file => [id, `http://localhost:8080/uploads/products/${file.filename}`]);
       await conn.query("INSERT INTO product_images (product_id, image_url) VALUES ?", [imageInsertValues]);
     }
+
+    // if (removedImages) {
+    //   const parsed = JSON.parse(removedImages);
+    //   for (const imageUrl of parsed) {
+    //     await deleteFromS3(imageUrl);
+    //     await conn.query("DELETE FROM product_images WHERE product_id = ? AND image_url = ?", [id, imageUrl]);
+    //   }
+    // }
+
+    // if (req.files && req.files.length > 0) {
+    //   const imageUrls = await Promise.all(
+    //     req.files.map(file => uploadToS3(file, 'products'))
+    //   );
+    //   const imageInsertValues = imageUrls.map(url => [id, url]);
+    //   await conn.query("INSERT INTO product_images (product_id, image_url) VALUES ?", [imageInsertValues]);
+    // }
+
 
     await conn.commit();
     res.json({ message: "Product updated successfully" });

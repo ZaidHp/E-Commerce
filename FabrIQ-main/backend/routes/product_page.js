@@ -322,19 +322,35 @@ router.get('/:urlKey', async (req, res) => {
       WHERE business_id = ?
     `, [product.business_id]);
 
+    // const [reviews] = await pool.query(`
+    //   SELECT 
+    //     pr.review_id,
+    //     pr.rating,
+    //     pr.review_text,
+    //     pr.review_media,
+    //     pr.created_at,
+    //     CONCAT(u.first_name, ' ', u.last_name) AS username
+    //   FROM product_reviews pr
+    //   JOIN users u ON pr.user_id = u.user_id
+    //   WHERE pr.product_id = ?
+    //   ORDER BY pr.created_at DESC
+    // `, [product.product_id]);
+
     const [reviews] = await pool.query(`
       SELECT 
         pr.review_id,
         pr.rating,
         pr.review_text,
-        pr.review_media,
+        GROUP_CONCAT(prm.media_url) AS review_media,
         pr.created_at,
-        CONCAT(u.first_name, ' ', u.last_name) AS username
-      FROM product_reviews pr
-      JOIN users u ON pr.user_id = u.user_id
-      WHERE pr.product_id = ?
-      ORDER BY pr.created_at DESC
-    `, [product.product_id]);
+        CONCAT(COALESCE(u.first_name, ''), ' ', COALESCE(u.last_name, '')) AS username
+        FROM product_reviews pr
+        JOIN users u ON pr.user_id = u.user_id
+        LEFT JOIN product_reviews_media prm ON pr.review_id = prm.review_id
+        WHERE pr.product_id = ?
+        GROUP BY pr.review_id, pr.rating, pr.review_text, pr.created_at, u.first_name, u.last_name
+        ORDER BY pr.created_at DESC
+      `, [product.product_id]);
 
     const [relatedProducts] = await pool.query(`
       SELECT 

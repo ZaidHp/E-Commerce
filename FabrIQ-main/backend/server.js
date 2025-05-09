@@ -24,6 +24,9 @@ const addressesRouter = require('./routes/addresses');
 const wishlistRouter = require('./routes/wishlist');
 const businessRouter = require('./routes/business');
 const protectedRouteRouter = require('./routes/protected_route')
+const customerReviewRouter = require('./routes/customers_reviews')
+const customerOrderRouter = require('./routes/customers_orders')
+const customerInfoRouter = require('./routes/customer_info')
 
 const deleteExpiredOtps = require('./utils/otpCleanup');
 const deleteExpiredTokens = require("./utils/deleteExpiredTokens");
@@ -72,6 +75,9 @@ app.use('/api/addresses', addressesRouter);
 app.use('/api/wishlist', wishlistRouter);
 app.use('/api/business', businessRouter);
 app.use('/api/protected_route', protectedRouteRouter)
+app.use('/api/user/orders', customerOrderRouter)
+app.use('/api/reviews', customerReviewRouter)
+app.use('/api/user', customerInfoRouter)
 
 cron.schedule('*/5 * * * *', () => {
   deleteExpiredOtps();
