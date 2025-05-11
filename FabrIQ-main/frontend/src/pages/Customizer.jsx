@@ -11,6 +11,7 @@ import { download, stylishShirt } from "../assets";
 // import { downloadCanvasToImage, reader } from "../config/helpers";
 import { fadeAnimation, slideAnimation } from "../config/motion";
 import { EditorTabs, FilterTabs, DecalTypes } from "../config/constants";
+import AddProductForm from "../business_components/AddProductForm";
 
 import {
   CustomButton,
@@ -28,6 +29,7 @@ const Customizer = ({nextStage}) => {
   const [prompt, setPrompt] = useState("");
   const [generatingImg, setGeneratingImg] = useState(false);
   const [activeEditorTab, setActiveEditorTab] = useState("");
+  const [showAddProduct, setShowAddProduct] = useState(false);
   const [activeFilterTab, setActiveFilterTab] = useState({
     logoShirt: true,
     stylishShirt: true,
@@ -74,38 +76,80 @@ const Customizer = ({nextStage}) => {
   };
 
   // Update the handleSubmit function to work with Replicate API
+  // const handleSubmit = async (type) => {
+  //   if (!prompt) return alert("Please enter a prompt");
+  
+  //   try {
+  //     setGeneratingImg(true);
+      
+  //     const response = await fetch("http://localhost:8080/api/v1/dalle", {
+  //       method: "POST",
+  //       headers: {
+  //         "Content-Type": "application/json",
+  //       },
+  //       body: JSON.stringify({ prompt }),
+  //     });
+  
+  //     if (!response.ok) {
+  //       const errorData = await response.json();
+  //       throw new Error(errorData.error || "Image generation failed");
+  //     }
+  
+  //     const data = await response.json();
+  //     handleDecals(type, `data:image/png;base64,${data.photo}`);
+      
+  //   } catch (error) {
+  //     console.error("Image generation failed:", error);
+  //     alert(error.message.includes("loading") 
+  //       ? "Model is loading, please try again in 20 seconds"
+  //       : error.message || "Something went wrong!");
+  //   } finally {
+  //     setGeneratingImg(false);
+  //     setActiveEditorTab("");
+  //   }
+  // };  
   const handleSubmit = async (type) => {
-    if (!prompt) return alert("Please enter a prompt");
-  
-    try {
-      setGeneratingImg(true);
-      
-      const response = await fetch("http://localhost:8080/api/v1/dalle", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ prompt }),
-      });
-  
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || "Image generation failed");
-      }
-  
-      const data = await response.json();
-      handleDecals(type, `data:image/png;base64,${data.photo}`);
-      
-    } catch (error) {
-      console.error("Image generation failed:", error);
-      alert(error.message.includes("loading") 
-        ? "Model is loading, please try again in 20 seconds"
-        : error.message || "Something went wrong!");
-    } finally {
-      setGeneratingImg(false);
-      setActiveEditorTab("");
+  if (!prompt) return alert("Please enter a prompt");
+
+  try {
+    setGeneratingImg(true);
+    
+    const response = await fetch("http://localhost:8080/api/v1/dalle", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ prompt }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || "Image generation failed");
     }
-  };  
+
+    const data = await response.json();
+    const imageUrl = `data:image/png;base64,${data.photo}`;
+    
+    // Store the generated image in state
+    handleDecals(type, imageUrl);
+    
+    // Return the image data for potential immediate use
+    return {
+      file: null, // We don't have a File object here
+      preview: imageUrl
+    };
+    
+  } catch (error) {
+    console.error("Image generation failed:", error);
+    alert(error.message.includes("loading") 
+      ? "Model is loading, please try again in 20 seconds"
+      : error.message || "Something went wrong!");
+    return null;
+  } finally {
+    setGeneratingImg(false);
+    setActiveEditorTab("");
+  }
+};
 
   const handleDecals = (type, result) => {
     const decalType = DecalTypes[type];
@@ -185,6 +229,10 @@ const Customizer = ({nextStage}) => {
 
 
   const handleNextStage = async () => {
+     if (nextStage === 'Add Product') {
+      setShowAddProduct(true);
+      return;
+    }
     try {
       const productData = {
         color: snap.color,
@@ -206,9 +254,10 @@ const Customizer = ({nextStage}) => {
       }
   
       // Save full product image if in "Add Product" stage
-      if (nextStage === 'Add Product' || nextStage === 'Order Now') {
-        productData.fullProductImage = await downloadCanvasToImage('product');
-      }
+       productData.fullProductImage = await downloadCanvasToImage('product');
+      // if (nextStage === 'Add Product' || nextStage === 'Order Now') {
+        // productData.fullProductImage = await downloadCanvasToImage('product');
+      // }
   
       console.log('Product data ready:', productData);
       alert('Images saved successfully! Paths logged in console.');
@@ -281,6 +330,9 @@ const Customizer = ({nextStage}) => {
         handleClick={ () => handleNextStage()}
         customStyle="w-fit px-4 py-2.5 font-bold text-sm absolute bottom-5 right-5 z-10"
       />
+      {showAddProduct && (
+            <AddProductForm onClose={() => setShowAddProduct(false)} />
+          )}
         </>
       )}
       

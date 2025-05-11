@@ -551,7 +551,7 @@ function ProductDescription() {
                     
                     <p className="text-gray-600 text-sm line-clamp-4">{review.review_text}</p>
                     
-                    {review.review_text.length > 120 && (
+                    {review.review_text && review.review_text.length > 120 && (
                       <button className="mt-2 text-indigo-600 text-sm font-medium hover:text-indigo-800 transition-colors">
                         Read more
                       </button>
@@ -597,7 +597,7 @@ function ProductDescription() {
                     <div className="aspect-square bg-gray-100 relative overflow-hidden">
                       {relatedProduct.images?.[0] ? (
                         <img
-                          src={`http://localhost:8080${relatedProduct.images[0]}`}
+                          src={relatedProduct.images[0]}
                           alt={relatedProduct.product_name}
                           className="absolute inset-0 w-full h-full object-contain p-4 group-hover:scale-105 transition-transform duration-300"
                         />

@@ -68,11 +68,144 @@ export const uploadImage = async (base64Image, folder) => {
   }
 };
 
+// In helpers.js
+// export const uploadImage = async (image, folder, returnFile = false) => {
+//   try {
+//     const formData = new FormData();
+//     const blob = await fetch(image).then(res => res.blob());
+//     const file = new File([blob], `${folder}-${Date.now()}.png`, { type: 'image/png' });
+//     formData.append('file', file);
+//     formData.append('upload_preset', 'your_upload_preset');
+    
+//     const response = await fetch('http://localhost:8080/api/upload', {
+//       method: 'POST',
+//       body: formData
+//     });
+    
+//     const data = await response.json();
+    
+//     if (returnFile) {
+//       return {
+//         url: data.secure_url,
+//         file: file
+//       };
+//     }
+//     return data.secure_url;
+//   } catch (error) {
+//     console.error('Error uploading image:', error);
+//     throw error;
+//   }
+// };
+
 // Capture canvas as image
-export const downloadCanvasToImage = async () => {
+// export const downloadCanvasToImage = async () => {
+//   const canvas = document.querySelector('canvas');
+//   if (!canvas) throw new Error('Canvas not found');
+  
+//   const dataURL = canvas.toDataURL('image/png');
+//   return await uploadImage(dataURL, 'products'); // Uploads to 'products' folder
+// };
+
+// export const downloadCanvasToImage = async (type = 'product') => {
+//   const canvas = document.querySelector('canvas');
+//   if (!canvas) throw new Error('Canvas not found');
+  
+//   const dataURL = canvas.toDataURL('image/png');
+  
+//   // For product image, upload to products folder
+//   if (type === 'product') {
+//     return await uploadImage(dataURL, 'products');
+//   }
+  
+//   // Return both file object and URL for form handling
+//   const blob = await (await fetch(dataURL)).blob();
+//   const file = new File([blob], `${type}.png`, { type: 'image/png' });
+  
+//   return {
+//     file,
+//     url: dataURL
+//   };
+// };
+
+// export const downloadCanvasToImage = async (type = 'product') => {
+//   const canvas = document.querySelector('canvas');
+//   if (!canvas) throw new Error('Canvas not found');
+  
+//   const dataURL = canvas.toDataURL('image/png');
+  
+//   try {
+//     // Convert data URL to File object
+//     const response = await fetch(dataURL);
+//     const blob = await response.blob();
+//     const file = new File([blob], `${type}-${Date.now()}.png`, { type: 'image/png' });
+    
+//     return {
+//       file,
+//       preview: dataURL
+//     };
+//   } catch (error) {
+//     console.error("Error converting canvas to image:", error);
+//     throw error;
+//   }
+// };
+
+export const downloadCanvasToImage = async (type = 'product') => {
   const canvas = document.querySelector('canvas');
   if (!canvas) throw new Error('Canvas not found');
   
-  const dataURL = canvas.toDataURL('image/png');
-  return await uploadImage(dataURL, 'products'); // Uploads to 'products' folder
+  // Use higher quality settings
+  const dataURL = canvas.toDataURL('image/png', 1.0);
+  
+  try {
+    // Convert data URL to blob
+    const response = await fetch(dataURL);
+    const blob = await response.blob();
+    
+    // Create a more descriptive filename
+    const fileName = `${type}-design-${Date.now()}.png`;
+    const file = new File([blob], fileName, { type: 'image/png' });
+    
+    return {
+      file,
+      preview: dataURL,
+      type
+    };
+  } catch (error) {
+    console.error("Error converting canvas to image:", error);
+    throw error;
+  }
 };
+
+// export const downloadCanvasToImage = (elementId = 'canvas', returnFile = false) => {
+//   return new Promise((resolve, reject) => {
+//     try {
+//       const canvas = document.getElementById(elementId);
+//       if (!canvas) {
+//         throw new Error(`Canvas element with ID ${elementId} not found`);
+//       }
+
+//       const dataURL = canvas.toDataURL('image/png');
+//       const link = document.createElement('a');
+
+//       if (!returnFile) {
+//         link.download = `${elementId}-${Date.now()}.png`;
+//         link.href = dataURL;
+//         link.click();
+//         resolve();
+//       } else {
+//         // Return both URL and File object
+//         fetch(dataURL)
+//           .then(res => res.blob())
+//           .then(blob => {
+//             const file = new File([blob], `${elementId}-${Date.now()}.png`, { type: 'image/png' });
+//             resolve({
+//               url: dataURL,
+//               file: file
+//             });
+//           });
+//       }
+//     } catch (error) {
+//       reject(error);
+//     }
+//   });
+// };

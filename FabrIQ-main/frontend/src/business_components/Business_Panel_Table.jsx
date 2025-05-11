@@ -222,10 +222,10 @@ const Table = ({
                   </>
                 ) : (
                   <>
-                    {row[col].length > 100
+                    {row[col] && row[col].length > 100
                       ? row[col].substring(0, 100) + "..."
                       : row[col]}{" "}
-                    {row[col].length > 100 && (
+                    {row[col] && row[col].length > 100 && (
                       <button
                         className="text-blue-500 text-sm"
                         onClick={() =>

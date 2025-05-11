@@ -12,7 +12,7 @@ const Product = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 5;
+  const itemsPerPage = 15;
   const [selectedRows, setSelectedRows] = useState([]);
 
   const business_id = localStorage.getItem("business_id");
@@ -23,7 +23,6 @@ const Product = () => {
         const response = await fetch(`http://localhost:8080/api/products?business_id=${business_id}`);
         const data = await response.json();
         setProductData(data.products);
-        console.log(data);
       } catch (error) {
         console.error("Failed to fetch products:", error);
       }

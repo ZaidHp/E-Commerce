@@ -21,6 +21,77 @@ const authenticateToken = (req, res, next) => {
 };
 
 // Get user orders with detailed information
+// router.get('/', authenticateToken, async (req, res) => {
+//   try {
+//     const userId = req.user.id;
+    
+//     // Get orders with business info
+//     const [orders] = await db.query(
+//       `SELECT 
+//         o.order_id, 
+//         o.total_amount, 
+//         o.order_status, 
+//         o.created_at,
+//         b.business_id,
+//         b.business_name,
+//         b.business_logo_url
+//       FROM orders o
+//       JOIN businesses b ON o.business_id = b.business_id
+//       WHERE o.user_id = ?
+//       ORDER BY o.created_at DESC`,
+//       [userId]
+//     );
+    
+//     // Get order items for each order
+//     for (const order of orders) {
+//       const [items] = await db.query(
+//         `SELECT 
+//           oi.item_id,
+//           oi.quantity,
+//           oi.item_price,
+//           p.product_id,
+//           p.product_name,
+//           p.url_key,
+//           (
+//             SELECT image_url 
+//             FROM product_images 
+//             WHERE product_id = p.product_id 
+//             LIMIT 1
+//           ) AS product_image,
+//           s.size,
+//           (
+//             SELECT review_id 
+//             FROM product_reviews 
+//             WHERE product_id = p.product_id AND user_id = ?
+//             LIMIT 1
+//           ) AS review_id,
+//           (
+//             SELECT rating 
+//             FROM product_reviews 
+//             WHERE product_id = p.product_id AND user_id = ?
+//             LIMIT 1
+//           ) AS review_rating
+//         FROM order_items oi
+//         JOIN products p ON oi.product_id = p.product_id
+//         JOIN product_size s ON oi.size_id = s.size_id
+//         WHERE oi.order_id = ?`,
+//         [userId, userId, order.order_id]
+//       );
+      
+//       // Format product image URL
+//       order.items = items.map(item => ({
+//         ...item,
+//         product_image: item.product_image || 'https://via.placeholder.com/150'
+//       }));
+//     }
+    
+//     res.json({ orders });
+//   } catch (err) {
+//     console.error('Error fetching orders:', err);
+//     res.status(500).json({ error: 'Failed to fetch orders' });
+//   }
+// });
+
 router.get('/', authenticateToken, async (req, res) => {
   try {
     const userId = req.user.id;
@@ -34,12 +105,24 @@ router.get('/', authenticateToken, async (req, res) => {
         o.created_at,
         b.business_id,
         b.business_name,
-        b.business_logo_url
+        b.business_logo_url,
+        (
+          SELECT review_id 
+          FROM business_reviews 
+          WHERE business_id = b.business_id AND user_id = ?
+          LIMIT 1
+        ) AS business_review_id,
+        (
+          SELECT rating 
+          FROM business_reviews 
+          WHERE business_id = b.business_id AND user_id = ?
+          LIMIT 1
+        ) AS business_review_rating
       FROM orders o
       JOIN businesses b ON o.business_id = b.business_id
       WHERE o.user_id = ?
       ORDER BY o.created_at DESC`,
-      [userId]
+      [userId, userId, userId]
     );
     
     // Get order items for each order
@@ -78,7 +161,6 @@ router.get('/', authenticateToken, async (req, res) => {
         [userId, userId, order.order_id]
       );
       
-      // Format product image URL
       order.items = items.map(item => ({
         ...item,
         product_image: item.product_image || 'https://via.placeholder.com/150'
@@ -134,7 +216,7 @@ router.get('/:orderId', authenticateToken, async (req, res) => {
         p.product_name,
         p.url_key,
         p.product_description,
-        s.size_name,
+        s.size,
         c.color_name,
         c.color_code,
         (

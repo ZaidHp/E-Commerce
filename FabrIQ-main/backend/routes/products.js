@@ -162,7 +162,7 @@ router.post('/', upload.fields([{ name: "images", maxCount: 10 }]), async (req, 
 
     if (req.files?.images?.length > 0) {
       for (const file of req.files.images) {
-        const imageUrl = `/uploads/products/${file.filename}`;
+        const imageUrl = `http://localhost:8080/uploads/products/${file.filename}`;
         await conn.query(
           'INSERT INTO product_images (product_id, image_url) VALUES (?, ?)',
           [product_id, imageUrl]

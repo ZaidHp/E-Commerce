@@ -35,6 +35,7 @@ import BusinessStore from "./customer_pages/BusinessStore";
 import AccountPage from "./customer_pages/AccountPage";
 import CustomerInfo from "./customer_components/CustomerInfo";
 import Order from "./customer_components/Orders";
+// import PaymentPage from "./customer_pages/PaymentPage";
 
 import BusinessLayout from "./layouts/BusinessLayout";
 import CustomerLayout from "./layouts/CustomerLayout";
@@ -51,8 +52,8 @@ function App() {
       <ScrollToTop />
         <Routes>
           {/* Public Routes */}
-          <Route path="/signup" element={<Signup />} />
-          <Route path="/login" element={<Login />} />
+          {/* <Route path="/signup" element={<Signup />} /> */}
+          {/* <Route path="/login" element={<Login />} /> */}
           <Route path="/verify-otp" element={<EmailVerify />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/reset-password" element={<ResetPassword />} />
@@ -123,8 +124,26 @@ function App() {
               </CustomerLayout>
           } />
 
+          {/* <Route 
+            path="/payment"
+            element={
+              <CustomerLayout>
+                <PaymentPage/>
+              </CustomerLayout>
+          } /> */}
+
           <Route 
             path="/auth"
+            element={
+              <GuestRoute>
+                <CustomerLayout>
+                  <AuthPage/>
+                </CustomerLayout>
+              </GuestRoute>
+          } />
+
+          <Route 
+            path="/auth/signup"
             element={
               <GuestRoute>
                 <CustomerLayout>

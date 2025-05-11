@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { FiSearch, FiShoppingBag, FiUser, FiHeart, FiMenu, FiX } from 'react-icons/fi';
+import { FiSearch, FiShoppingBag, FiUser, FiHeart, FiMenu, FiX, FiSettings, FiPackage, FiLogOut } from 'react-icons/fi';
 import { IoIosArrowDown } from 'react-icons/io';
 import { Trash2 } from 'lucide-react';
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-import AuthModal from './AuthModal';
+// import AuthModal from './AuthModal';
+import { logoutUser } from '../utility/logoutUser';
 
 const Navbar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -27,7 +28,10 @@ const Navbar = () => {
   const wishlistIconRef = useRef(null);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [authMode, setAuthMode] = useState('login');
-  const [authContext, setAuthContext] = useState(''); 
+  const [authContext, setAuthContext] = useState('');
+  const [isAccountOpen, setIsAccountOpen] = useState(false);
+  const accountDropdownRef = useRef(null);
+  const accountIconRef = useRef(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -154,6 +158,16 @@ const Navbar = () => {
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (
+        accountDropdownRef.current && 
+        !accountDropdownRef.current.contains(event.target) &&
+        accountIconRef.current && 
+        !accountIconRef.current.contains(event.target) &&
+        isAccountOpen
+      ) {
+      setIsAccountOpen(false);
+      }
+      
+      if (
         cartDropdownRef.current && 
         !cartDropdownRef.current.contains(event.target) &&
         cartIconRef.current && 
@@ -176,13 +190,21 @@ const Navbar = () => {
 
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [isCartOpen, isWishlistOpen]);
+  }, [isCartOpen, isWishlistOpen, isAccountOpen]);
 
   const handleSearch = (e) => {
     e.preventDefault();
     if (searchQuery.trim()) {
       navigate(`/product/search?q=${encodeURIComponent(searchQuery)}`);
       setIsSearchOpen(false);
+    }
+  };
+
+  const handleAccountHover = () => {
+    const token = localStorage.getItem('access_token');
+    if (!token) {
+      setAuthContext('account');
+      return;
     }
   };
 
@@ -204,6 +226,15 @@ const Navbar = () => {
     fetchWishlistItems();
   };
 
+  const handleAccountIconClick = (e) => {
+    e.preventDefault();
+    if (localStorage.getItem('access_token')) {
+      navigate('/account');
+    } else {
+      navigate('/auth');
+    }
+  };
+
   const handleCartIconClick = (e) => {
     e.preventDefault();
     navigate('/cart');
@@ -222,6 +253,13 @@ const Navbar = () => {
     // } else {
     //   setIsWishlistOpen(true);
     // }
+  };
+
+  const handleLogout = async () => {
+    await logoutUser();
+    // toast.success('Successfully logged out');
+    navigate('/auth');
+    setIsAccountOpen(false);
   };
 
   const removeFromWishlist = async (productId) => {
@@ -355,9 +393,189 @@ const Navbar = () => {
               </button>
 
               {/* Account */}
-              <Link to="/account" className="p-2 text-gray-600 hover:text-indigo-600 hidden md:block">
-                <FiUser size={20} />
-              </Link>
+              <div 
+                className="relative group" 
+                onMouseEnter={handleAccountHover}
+              >
+                <button 
+                  ref={accountIconRef}
+                  className="p-2 text-gray-600 hover:text-indigo-600 hidden md:block"
+                  aria-label="Account"
+                  onClick={handleAccountIconClick}
+                >
+                  <FiUser size={20} />
+                </button>
+                {/* Account Dropdown */}
+                {/* <div 
+                  ref={accountDropdownRef}
+                  className="absolute right-0 mt-2 w-72 bg-white rounded-lg shadow-xl border border-gray-200 z-50 invisible group-hover:visible opacity-0 group-hover:opacity-100 transition-all duration-200"
+                  style={{ visibility: isAccountOpen ? 'visible' : '', opacity: isAccountOpen ? '1' : '' }}
+                >
+                  <div className="p-4 border-b border-gray-200">
+                    <div className="flex justify-between items-center">
+                      <h3 className="text-lg font-semibold text-gray-900">Your Account</h3>
+                    </div>
+                  </div>
+
+                  {!localStorage.getItem('access_token') ? (
+                    <div className="p-6 text-center">
+                      <div className="mx-auto w-16 h-16 bg-indigo-50 rounded-full flex items-center justify-center mb-4">
+                        <FiUser size={24} className="text-indigo-600" />
+                      </div>
+                      <h3 className="text-lg font-medium text-gray-900 mb-2">Welcome to fabrIQ</h3>
+                      <p className="text-gray-600 mb-4">Sign in to access your account and manage your orders</p>
+                      <div className="flex flex-col space-y-3">
+                        <button
+                          onClick={() => {
+                            setAuthMode('login');
+                            setShowAuthModal(true);
+                          }}
+                          className="w-full py-2 px-4 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-md transition-colors"
+                        >
+                          Sign In
+                        </button>
+                        <button
+                          onClick={() => {
+                            setAuthMode('signup');
+                            setShowAuthModal(true);
+                          }}
+                          className="w-full py-2 px-4 bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 font-medium rounded-md transition-colors"
+                        >
+                          Create Account
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="py-2">
+                      <div className="px-6 py-4">
+                        <p className="text-gray-600 mb-1">Signed in as</p>
+                        <p className="text-lg font-medium text-gray-900">{localStorage.getItem('name') || 'Customer'}</p>
+                      </div>
+                      <div className="border-t border-gray-100">
+                        <Link
+                          to="/account/info"
+                          onClick={() => setIsAccountOpen(false)}
+                          className="flex items-center px-6 py-3 text-gray-700 hover:bg-gray-50 hover:text-indigo-600 transition-colors"
+                        >
+                          <FiSettings className="mr-3" size={18} />
+                          <span>Account Information</span>
+                        </Link>
+                        
+                        <Link
+                          to="/account/order"
+                          onClick={() => setIsAccountOpen(false)}
+                          className="flex items-center px-6 py-3 text-gray-700 hover:bg-gray-50 hover:text-indigo-600 transition-colors"
+                        >
+                          <FiPackage className="mr-3" size={18} />
+                          <span>My Orders</span>
+                        </Link>
+                      </div>
+                      <div className="border-t border-gray-100 mt-2 pt-2 px-6 pb-4">
+                        <button
+                          onClick={handleLogout}
+                          className="flex items-center w-full py-2 px-4 bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 rounded-md font-medium transition-colors mt-2"
+                        >
+                          <FiLogOut className="mr-2" size={18} />
+                          <span>Log Out</span>
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div> */}
+
+              {/* Account Dropdown */}
+              <div 
+                ref={accountDropdownRef}
+                className="absolute right-0 mt-2 w-64 bg-white rounded-lg shadow-xl border border-gray-200 z-50 invisible group-hover:visible opacity-0 group-hover:opacity-100 transition-all duration-200"
+                style={{ visibility: isAccountOpen ? 'visible' : '', opacity: isAccountOpen ? '1' : '' }}
+              >
+                {!localStorage.getItem('access_token') ? (
+                  <div className="p-4">
+                    <div className="text-center mb-4">
+                      <div className="mx-auto w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-3">
+                        <FiUser size={24} className="text-gray-400" />
+                      </div>
+                      <h3 className="text-lg font-medium text-gray-900 mb-1">Welcome</h3>
+                      <p className="text-sm text-gray-600">Sign in to access your account</p>
+                    </div>
+                    <button
+                      onClick={() => {
+                        navigate('/auth');
+                        setIsAccountOpen(false);
+                      }}
+                      className="w-full py-2 px-4 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-md transition-colors"
+                    >
+                      Sign In
+                    </button>
+                    <p className="mt-3 text-xs text-center text-gray-500">
+                      New customer?{' '}
+                      <button 
+                        onClick={() => {
+                          navigate('/auth/signup');
+                          setIsAccountOpen(false);
+                        }}
+                        className="text-indigo-600 hover:text-indigo-800"
+                      >
+                        Create an account
+                      </button>
+                    </p>
+                  </div>
+                ) : (
+                  <div className="p-4">
+                    <div className="flex items-center mb-4">
+                      <div className="w-12 h-12 bg-indigo-100 rounded-full flex items-center justify-center mr-3">
+                        <span className="text-indigo-800 font-medium text-lg">
+                          {localStorage.getItem("name")?.charAt(0).toUpperCase() || 'U'}
+                        </span>
+                      </div>
+                      <div>
+                        <h3 className="font-medium text-gray-900">
+                          Hi, {localStorage.getItem("name") || 'User'}
+                        </h3>
+                        <p className="text-sm text-gray-500">Welcome back</p>
+                      </div>
+                    </div>
+        
+                    <div className="space-y-2">
+                    <button
+                      onClick={() => {
+                        navigate('/account/info');
+                        setIsAccountOpen(false);
+                      }}
+                      className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-md flex items-center"
+                    >
+                      <FiUser className="mr-2" size={16} />
+                      Account Information
+                    </button>
+                    <button
+                      onClick={() => {
+                        navigate('/account/order');
+                        setIsAccountOpen(false);
+                      }}
+                      className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-md flex items-center"
+                    >
+                      <FiShoppingBag className="mr-2" size={16} />
+                      My Orders
+                    </button>
+                  </div>
+        
+                  <button
+                    // onClick={() => {
+                    //   logoutUser();
+                    //   setIsAccountOpen(false);
+                    //   navigate('/auth');
+                    // }}
+                    onClick={handleLogout}
+                    className="w-full mt-4 py-2 px-4 border border-gray-300 text-gray-700 font-medium rounded-md hover:bg-gray-50 flex items-center justify-center"
+                  >
+                    <FiX className="mr-2" size={16} />
+                    Sign Out
+                  </button>
+                </div>
+                )}
+              </div>
+            </div>
 
               {/* Wishlist */}
               <div 
@@ -385,11 +603,11 @@ const Navbar = () => {
                 </button>
                 
                 {/* Auth Modal */}
-                <AuthModal 
+                {/* <AuthModal 
                   isOpen={showAuthModal} 
                   onClose={() => setShowAuthModal(false)}
                   initialMode={authMode}
-                />
+                /> */}
 
                 {/* Wishlist Dropdown */}
                 <div 
@@ -419,8 +637,7 @@ const Navbar = () => {
                       <div className="flex flex-col space-y-3">
                         <button
                           onClick={() => {
-                            setAuthMode('login');
-                            setShowAuthModal(true);
+                            navigate('/auth')
                           }}
                           className="w-full py-2 px-4 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-md transition-colors"
                         >
@@ -428,8 +645,7 @@ const Navbar = () => {
                         </button>
                         <button
                           onClick={() => {
-                            setAuthMode('signup');
-                            setShowAuthModal(true);
+                            navigate('/auth/signup')
                           }}
                           className="w-full py-2 px-4 bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 font-medium rounded-md transition-colors"
                         >
@@ -525,7 +741,7 @@ const Navbar = () => {
                                   </p>
                                   <button
                                     onClick={() => {
-                                      navigate(`/product/${item.url_key}`);
+                                      navigate(`/product/viewProduct/${item.url_key}`);
                                       setIsWishlistOpen(false);
                                       
                                     }}
@@ -604,8 +820,7 @@ const Navbar = () => {
                       <div className="flex flex-col space-y-3">
                         <button
                           onClick={() => {
-                            setAuthMode('login');
-                            setShowAuthModal(true);
+                            navigate('/auth')
                           }}
                           className="w-full py-2 px-4 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-md transition-colors"
                         >
@@ -613,8 +828,7 @@ const Navbar = () => {
                         </button>
                         <button
                           onClick={() => {
-                            setAuthMode('signup');
-                            setShowAuthModal(true);
+                            navigate('/auth/signup')
                           }}
                           className="w-full py-2 px-4 bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 font-medium rounded-md transition-colors"
                         >
@@ -791,7 +1005,7 @@ const Navbar = () => {
                 </div>
               ))}
             </div>
-            <div className="pt-4 pb-3 border-t border-gray-200">
+            {/* <div className="pt-4 pb-3 border-t border-gray-200">
               <div className="flex items-center px-5 space-x-4">
                 <Link to="/account" className="p-2 text-gray-600 hover:text-indigo-600">
                   <FiUser size={20} />
@@ -805,9 +1019,82 @@ const Navbar = () => {
                   <span className="ml-2">Wishlist</span>
                 </Link>
               </div>
+            </div> */}
+            <div className="pt-4 pb-3 border-t border-gray-200">
+              <div className="flex items-center px-5 space-x-4">
+                {localStorage.getItem('access_token') ? (
+                  <div className="flex flex-col w-full">
+                    <div className="flex items-center mb-3">
+                      <div className="w-10 h-10 bg-indigo-100 rounded-full flex items-center justify-center mr-3">
+                        <span className="text-indigo-800 font-medium">
+                          {localStorage.getItem("name")?.charAt(0).toUpperCase() || 'U'}
+                        </span>
+                      </div>
+                      <div>
+                        <h3 className="font-medium text-gray-900">
+                          {localStorage.getItem("name") || 'User'}
+                        </h3>
+                        <p className="text-xs text-gray-500">Welcome back</p>
+                      </div>
+                    </div>
+        
+                    <button
+                      onClick={() => {
+                        navigate('/account/info');
+                        setIsMenuOpen(false);
+                      }}
+                      className="flex items-center p-2 text-gray-600 hover:text-indigo-600"
+                    >
+                      <FiUser className="mr-2" size={18} />
+                      Account Information
+                    </button>
+        
+                    <button
+                      onClick={() => {
+                        navigate('/account/orders');
+                        setIsMenuOpen(false);
+                      }}
+                      className="flex items-center p-2 text-gray-600 hover:text-indigo-600"
+                    >
+                      <FiShoppingBag className="mr-2" size={18} />
+                      My Orders
+                    </button>
+        
+                    <button
+                      onClick={handleLogout}
+                      className="flex items-center p-2 text-red-600 hover:text-red-800 mt-2 border-t border-gray-200 pt-3"
+                    >
+                      <FiX className="mr-2" size={18} />
+                      Sign Out
+                    </button>
+                  </div>
+                  ) : (
+                    <button 
+                      onClick={() => {
+                        navigate('/auth');
+                        setIsMenuOpen(false);
+                      }} 
+                      className="flex items-center p-2 text-gray-600 hover:text-indigo-600"
+                    >
+                      <FiUser size={20} />
+                      <span className="ml-2">Sign In</span>
+                    </button>
+                  )}
+    
+                  {/* Keep Wishlist in mobile view */}
+                  <Link to="/wishlist" className="p-2 text-gray-600 hover:text-indigo-600 relative">
+                    <FiHeart size={20} />
+                    {wishlistItemsCount > 0 && (
+                      <span className="absolute -top-1 -right-1 bg-indigo-600 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                        {wishlistItemsCount}
+                      </span>
+                    )}
+                    <span className="ml-2">Wishlist</span>
+                  </Link>
+                </div>
+              </div>
             </div>
-          </div>
-        )}
+          )}
 
         {/* Desktop Search Overlay */}
         {isSearchOpen && (

@@ -421,7 +421,7 @@ const BusinessStore = () => {
                         <>
                           {renderStars(biz.average_rating)}
                           <span className="text-xs text-gray-500 ml-1">
-                            ({Number(biz.average_rating.toFixed(1))})
+                            ({Number(biz.average_rating).toFixed(1)})
                           </span>
                         </>
                       ) : (

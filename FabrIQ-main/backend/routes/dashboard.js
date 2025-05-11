@@ -67,7 +67,7 @@ router.get('/business/:businessId', async (req, res) => {
     const monthlyGrowth = ((monthlySales - prevMonthlySales) / prevMonthlySales) * 100;
 
     const [bestProduct] = await db.query(`
-        SELECT p.product_id, p.product_name, SUM(oi.quantity) AS total_sold
+        SELECT p.product_id, p.product_name, SUM(oi.quantity) AS total_sold, sum(o.business_earnings) AS total_sales
         FROM order_items oi
         JOIN products p ON oi.product_id = p.product_id
         JOIN orders o ON oi.order_id = o.order_id
